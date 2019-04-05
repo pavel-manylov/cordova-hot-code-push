@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.5.4 (2019-04-05)
+
+**Improvements:**
+
+- Clean up all releases if original config (from application bundle) contains higher version number.
+
 ## 1.5.3 (2016-05-27)
 
 **Bug fixes:**
