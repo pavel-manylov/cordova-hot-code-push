@@ -52,14 +52,14 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     [self doLocalInit];
     [self subscribeToEvents];
     
+    // cleanup file system: remove older releases, except current and the previous one
+    [self cleanupFileSystemFromOldReleases];
+    
     // install www folder if it is needed
     if ([self isWWwFolderNeedsToBeInstalled]) {
         [self installWwwFolder];
         return;
     }
-    
-    // cleanup file system: remove older releases, except current and the previous one
-    [self cleanupFileSystemFromOldReleases];
     
     _isPluginReadyForWork = YES;
     [self resetIndexPageToExternalStorage];
@@ -704,9 +704,39 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
         return;
     }
     
+    HCPApplicationConfig *config = [HCPApplicationConfig configFromBundle:[HCPFilesStructure defaultConfigFileName]];
+    
+    int originalAppVersionCode = [self versionToCode: config.contentConfig.releaseVersion];
+    int currentVersionCode = [self versionToCode:_pluginInternalPrefs.currentReleaseVersionName];
+    
+    if (originalAppVersionCode > currentVersionCode) {
+        [HCPCleanupHelper removeUnusedReleasesExcept:@[@""]];
+        return;
+    }
+    
     [HCPCleanupHelper removeUnusedReleasesExcept:@[_pluginInternalPrefs.currentReleaseVersionName,
                                                    _pluginInternalPrefs.previousReleaseVersionName,
                                                    _pluginInternalPrefs.readyForInstallationReleaseVersionName]];
+}
+
+/**
+* Convert version title to version code to be able to compare with another one.
+* e.g. versionCode = MAJOR * 10000 + MINOR * 100 + PATCH for versionTitle like X.Y.Z.
+* @param versionTitle
+*/
+- (int)versionToCode:(NSString *) versionTitle {
+    NSArray *versionParts = [versionTitle componentsSeparatedByString:@"."];
+    int multiplierStep = 100;
+    u_long partsCount = [versionParts count];
+    int multiplier = pow(multiplierStep, partsCount - 1);
+    int versionCode = 0;
+    
+    for (NSString *versionPart in versionParts) {
+        versionCode += [versionPart integerValue] * multiplier;
+        multiplier /= multiplierStep;
+    }
+    
+    return versionCode;
 }
 
 #pragma mark Methods, invoked from Javascript

@@ -233,6 +233,26 @@ public class HotCodePushPlugin extends CordovaPlugin {
         pluginInternalPrefs = config;
     }
 
+    /**
+     * Convert version title to version code to be able to compare with another one.
+     * e.g. versionCode = MAJOR * 10000 + MINOR * 100 + PATCH for versionTitle like X.Y.Z.
+     * @param versionTitle
+     * @return
+     */
+    private int versionToCode(String versionTitle) {
+        final String[] versionParts = versionTitle.split("\\.");
+        final int multiplierStep = 100;
+        int multiplier = ((int) Math.pow(multiplierStep, (versionParts.length - 1)));
+        int versionCode = 0;
+
+        for (String versionPart : versionParts) {
+            versionCode += Integer.parseInt(versionPart) * multiplier;
+            multiplier /= multiplierStep;
+        }
+
+        return versionCode;
+    }
+
     // endregion
 
     // region JavaScript processing
@@ -925,6 +945,18 @@ public class HotCodePushPlugin extends CordovaPlugin {
         if (TextUtils.isEmpty(pluginInternalPrefs.getCurrentReleaseVersionName())) {
             return;
         }
+
+        // Get config from application bundle.
+        final ApplicationConfig originalAppConfig = ApplicationConfig.configFromAssets(cordova.getActivity(), PluginFilesStructure.CONFIG_FILE_NAME);
+        final int originalVersionCode = versionToCode(originalAppConfig.getContentConfig().getReleaseVersion());
+        final int currentVersionCode = versionToCode(pluginInternalPrefs.getCurrentReleaseVersionName());
+
+        if (originalVersionCode > currentVersionCode) {
+            // Clear all releases, because a user updated application from a store.
+            CleanUpHelper.removeReleaseFolders(cordova.getActivity(), new String[]{});
+            return;
+        }
+
 
         CleanUpHelper.removeReleaseFolders(cordova.getActivity(),
                 new String[]{pluginInternalPrefs.getCurrentReleaseVersionName(),
