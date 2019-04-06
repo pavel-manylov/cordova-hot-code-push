@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.5.5 (2019-04-06)
+
+**Bug fixes**
+
+- Repalce repo urls to new.
+
 ## 1.5.4 (2019-04-05)
 
 **Improvements:**
