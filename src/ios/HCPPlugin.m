@@ -28,6 +28,7 @@
     HCPFilesStructure *_filesStructure;
     NSString *_defaultCallbackID;
     BOOL _isPluginReadyForWork;
+    BOOL _wasCleanupBecauseNewVersionInstalled;
     HCPPluginInternalPreferences *_pluginInternalPrefs;
     NSString *_installationCallback;
     NSString *_downloadCallback;
@@ -56,7 +57,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     [self cleanupFileSystemFromOldReleases];
     
     // install www folder if it is needed
-    if ([self isWWwFolderNeedsToBeInstalled]) {
+    if (_wasCleanupBecauseNewVersionInstalled || [self isWWwFolderNeedsToBeInstalled]) {
         [self installWwwFolder];
         return;
     }
@@ -711,6 +712,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     
     if (originalAppVersionCode > currentVersionCode) {
         // Remove all except the release of the current version. We need to exclude it, because clearing and initialization of release are asynchronous tasks. 
+        _wasCleanupBecauseNewVersionInstalled = YES;
         [HCPCleanupHelper removeUnusedReleasesExcept:@[config.contentConfig.releaseVersion]];
         return;
     }
