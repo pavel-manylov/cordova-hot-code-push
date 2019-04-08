@@ -710,7 +710,8 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     int currentVersionCode = [self versionToCode:_pluginInternalPrefs.currentReleaseVersionName];
     
     if (originalAppVersionCode > currentVersionCode) {
-        [HCPCleanupHelper removeUnusedReleasesExcept:@[@""]];
+        // Remove all except the release of the current version. We need to exclude it, because clearing and initialization of release are asynchronous tasks. 
+        [HCPCleanupHelper removeUnusedReleasesExcept:@[config.contentConfig.releaseVersion]];
         return;
     }
     

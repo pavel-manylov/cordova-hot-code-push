@@ -953,7 +953,10 @@ public class HotCodePushPlugin extends CordovaPlugin {
 
         if (originalVersionCode > currentVersionCode) {
             // Clear all releases, because a user updated application from a store.
-            CleanUpHelper.removeReleaseFolders(cordova.getActivity(), new String[]{});
+            // Remove all except the release of the current version. We need to exclude it, because clearing and initialization of release are asynchronous tasks. 
+            CleanUpHelper.removeReleaseFolders(cordova.getActivity(), new String[]{
+                originalAppConfig.getContentConfig().getReleaseVersion()
+            });
             return;
         }
 
