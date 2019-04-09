@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.5.6 (2019-04-09)
+
+**Improvements**
+
+- Ignore cached version of application if a user updated the application from app store (version in original chcp config older than in cached).
+
 ## 1.5.5 (2019-04-06)
 
 **Bug fixes**
