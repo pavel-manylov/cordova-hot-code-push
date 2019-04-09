@@ -81,6 +81,7 @@ public class HotCodePushPlugin extends CordovaPlugin {
     private Handler handler;
     private boolean isPluginReadyForWork;
     private boolean dontReloadOnStart;
+    private boolean wasCleanupBecauseNewVersionInstalled;
 
     private List<PluginResult> defaultCallbackStoredResults;
     private FetchUpdateOptions defaultFetchUpdateOptions;
@@ -117,7 +118,7 @@ public class HotCodePushPlugin extends CordovaPlugin {
         // ensure that www folder installed on external storage;
         // if not - install it
         isPluginReadyForWork = isPluginReadyForWork();
-        if (!isPluginReadyForWork) {
+        if (wasCleanupBecauseNewVersionInstalled || !isPluginReadyForWork) {
             dontReloadOnStart = true;
             installWwwFolder();
             return;
@@ -953,7 +954,11 @@ public class HotCodePushPlugin extends CordovaPlugin {
 
         if (originalVersionCode > currentVersionCode) {
             // Clear all releases, because a user updated application from a store.
-            CleanUpHelper.removeReleaseFolders(cordova.getActivity(), new String[]{});
+            // Remove all except the release of the current version. We need to exclude it, because clearing and initialization of release are asynchronous tasks. 
+            wasCleanupBecauseNewVersionInstalled = true;
+            CleanUpHelper.removeReleaseFolders(cordova.getActivity(), new String[]{
+                originalAppConfig.getContentConfig().getReleaseVersion()
+            });
             return;
         }
 
