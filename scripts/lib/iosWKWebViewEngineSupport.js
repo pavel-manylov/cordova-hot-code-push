@@ -5,6 +5,7 @@ Mainly, it has only two method: to activate and to deactivate swift support in t
 
 var path = require('path');
 var fs = require('fs');
+var xcode = require('xcode');
 var strFormat = require('util').format;
 var COMMENT_KEY = /_comment$/;
 var WKWEBVIEW_PLUGIN_NAME = 'cordova-plugin-wkwebview-engine';
@@ -99,7 +100,7 @@ function loadProjectFile_cordova_5_and_6() {
 
 function loadProjectFile_cordova_7_and_above() {
   var pbxPath = path.join(iosPlatformPath, projectName + '.xcodeproj', 'project.pbxproj');
-  var xcodeproj = context.requireCordovaModule('xcode').project(pbxPath);
+  var xcodeproj = xcode.project(pbxPath);
   xcodeproj.parseSync();
 
   var saveProj = function() {
