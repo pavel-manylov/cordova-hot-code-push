@@ -5,6 +5,7 @@
 //
 
 #import <Cordova/CDVConfigParser.h>
+#import <Cordova/NSDictionary+CordovaPreferences.h>
 
 #import "HCPPlugin.h"
 #import "HCPFileDownloader.h"
@@ -37,6 +38,7 @@
     HCPAppUpdateRequestAlertDialog *_appUpdateRequestDialog;
     NSString *_indexPage;
     NSMutableArray<CDVPluginResult *> *_defaultCallbackStoredResults;
+    NSURL *_filesPrefix;
 }
 
 @end
@@ -138,6 +140,26 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  *  Perform initialization of the plugin variables.
  */
 - (void)doLocalInit {
+    // Handle
+    _filesPrefix = nil;
+    NSString *webViewEngineClassName = NSStringFromClass([self.webViewEngine class]);
+    if ([webViewEngineClassName isEqualToString:@"CDVWKWebViewEngine"]) {
+        // viewController would be available now. we attempt to set all possible delegates to it, by default
+        NSDictionary* settings = self.commandDelegate.settings;
+        NSString *bind = [settings cordovaSettingForKey:@"Hostname"];
+        if(bind == nil){
+            bind = @"localhost";
+        }
+        NSString *scheme = [settings cordovaSettingForKey:@"iosScheme"];
+        if(scheme == nil || [scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]  || [scheme isEqualToString:@"file"]){
+            scheme = @"ionic";
+        }
+        NSURLComponents *components = [NSURLComponents new];
+        components.scheme = scheme;
+        components.host = bind;
+        _filesPrefix = [components URL];
+    }
+    
     _defaultCallbackStoredResults = [[NSMutableArray alloc] init];
     
     // init plugin config from xml
@@ -154,6 +176,18 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     
     // init file structure for www files
     _filesStructure = [[HCPFilesStructure alloc] initWithReleaseVersion:_pluginInternalPrefs.currentReleaseVersionName];
+}
+
+-(NSURL*) getValidResourceURL:(NSURL *) origin {
+    if (_filesPrefix == nil) {
+        return origin;
+    }
+    NSURLComponents *components = [NSURLComponents new];
+    components.scheme = _filesPrefix.scheme;
+    components.host = _filesPrefix.host;
+    components.path = [NSString stringWithFormat:@"/_app_file_%@", origin.path];
+
+    return [components URL];
 }
 
 /**
@@ -248,8 +282,9 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  *  @param url url to load
  */
 - (void)loadURL:(NSString *)url {
+    NSURL* wwwFolder = [self getValidResourceURL:_filesStructure.wwwFolder];
     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        NSURL *loadURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", _filesStructure.wwwFolder.absoluteString, url]];
+        NSURL *loadURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", wwwFolder.absoluteString, url]];
         NSURLRequest *request = [NSURLRequest requestWithURL:loadURL
                                                  cachePolicy:NSURLRequestReloadIgnoringCacheData
                                              timeoutInterval:10000];
@@ -279,7 +314,8 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     
     // rewrite starting page www folder path: should load from external storage
     if ([self.viewController isKindOfClass:[CDVViewController class]]) {
-        ((CDVViewController *)self.viewController).wwwFolderName = _filesStructure.wwwFolder.absoluteString;
+        NSURL* wwwFolder = [self getValidResourceURL:_filesStructure.wwwFolder];
+        ((CDVViewController *)self.viewController).wwwFolderName = wwwFolder.absoluteString;
     } else {
         NSLog(@"HotCodePushError: Can't make starting page to be from external storage. Main controller should be of type CDVViewController.");
     }
