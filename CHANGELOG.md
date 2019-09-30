@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.5.8
+
+**Improvements**
+
+- Add support of Ionic Web View.
+
+## 1.5.7 (2019-09-13)
+
+**Improvements**
+
+- Use `xcode` npm package directly instead of using `context.requireCordovaModule('xcode')`
+
 ## 1.5.6 (2019-04-09)
 
 **Improvements**
