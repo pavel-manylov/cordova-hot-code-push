@@ -244,25 +244,6 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
 }
 
 /**
- *  Load given url into the WebView
- *
- *  @param url url to load
- */
-- (void)loadURL:(NSString *)url {
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        NSURL *loadURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", _filesStructure.wwwFolder.absoluteString, url]];
-        NSURLRequest *request = [NSURLRequest requestWithURL:loadURL
-                                                 cachePolicy:NSURLRequestReloadIgnoringCacheData
-                                             timeoutInterval:10000];
-#ifdef __CORDOVA_4_0_0
-        [self.webViewEngine loadRequest:request];
-#else
-        [self.webView loadRequest:request];
-#endif
-    }];
-}
-
-/**
  *  Redirect user to the index page that is located on the external storage.
  */
 - (void)resetIndexPageToExternalStorage {
@@ -666,7 +647,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     [self invokeDefaultCallbackWithMessage:pluginResult];
     
     // reload application to the index page
-    [self loadURL:[self indexPageFromConfigXml]];
+    [self resetIndexPageToExternalStorage];
     
     [self cleanupFileSystemFromOldReleases];
 }
@@ -688,7 +669,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
         [self loadApplicationConfig];
     }
     
-    [self loadURL:[self indexPageFromConfigXml]];
+    [self resetIndexPageToExternalStorage];
 }
 
 /**
