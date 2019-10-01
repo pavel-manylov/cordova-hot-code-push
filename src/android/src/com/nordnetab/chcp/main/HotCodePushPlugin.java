@@ -1,7 +1,6 @@
 package com.nordnetab.chcp.main;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
@@ -45,9 +44,11 @@ import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.PluginManager;
 import org.apache.cordova.PluginResult;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -64,9 +65,11 @@ import java.util.Map;
  */
 public class HotCodePushPlugin extends CordovaPlugin {
 
-    private String FILE_PREFIX = "file://";
+    private static final String FILE_PREFIX = "file://";
     private static final String WWW_FOLDER = "www";
     private static final String LOCAL_ASSETS_FOLDER = "file:///android_asset/www";
+    private static final String IONIC_WEB_VIEW_PLUGIN_NAME = "IonicWebView";
+    private static final String IONIC_WEB_VIEW_SET_SERVER_PATH_ACTION_NAME = "setServerBasePath";
 
     private String startingPage;
     private IObjectFileStorage<ApplicationConfig> appConfigStorage;
@@ -91,18 +94,6 @@ public class HotCodePushPlugin extends CordovaPlugin {
 
     @Override
     public void initialize(final CordovaInterface cordova, final CordovaWebView webView) {
-      // Ionic uses local web server with specific endpoint to serve local resources.
-        if (webView.getEngine().getClass().getName().equals("com.ionicframework.cordova.webview.IonicWebViewEngine")) {
-            // See https://github.com/ionic-team/cordova-plugin-ionic-webview/blob/fab9d1fbd686175cea7f6d61c60f9ee64a53f545/src/android/com/ionicframework/cordova/webview/IonicWebViewEngine.java
-            Log.d("CHCP", "Loading external page using Ionic Web View");
-            String hostname = preferences.getString("Hostname", "localhost");
-            String scheme = preferences.getString("Scheme", "http");
-            Uri.Builder builder = new Uri.Builder();
-            builder.scheme(scheme)
-              .authority(hostname)
-              .path("_app_file_");
-            FILE_PREFIX = builder.build().toString();
-        }
         super.initialize(cordova, webView);
 
         parseCordovaConfigXml();
@@ -656,10 +647,28 @@ public class HotCodePushPlugin extends CordovaPlugin {
             Log.d("CHCP", "External starting page not found. Aborting page change.");
             return;
         }
-
-        // load index page from the external source
-        external = Paths.get(fileStructure.getWwwFolder(), indexPage);
-        webView.loadUrlIntoView(FILE_PREFIX + external, false);
+        final PluginManager pluginManager = webView.getPluginManager();
+        final CordovaPlugin ionicWebViewPlugin = pluginManager.getPlugin(IONIC_WEB_VIEW_PLUGIN_NAME);
+        if (ionicWebViewPlugin != null) {
+            // Current application uses Ionic Web View plugin.
+            // Change root directory through cordova plugin API to prevent having a reference to Ionic web view plugin.
+            CallbackContext callbackContext = new CallbackContext("CHCP-FAKE-CALLBACK-ID", webView);
+            try {
+                // Prepare args. Args should be JSON serialized array.
+                final String wwwRootPath = fileStructure.getWwwFolder();
+                final String rawArgs = new JSONArray(new String[]{ wwwRootPath }).toString();
+                ionicWebViewPlugin.execute(IONIC_WEB_VIEW_SET_SERVER_PATH_ACTION_NAME, rawArgs, callbackContext);
+            }
+            catch (JSONException ex) {
+              Log.d("CHCP", "Loading external page failed: " + ex.getMessage());
+              return;
+            }
+        }
+        else {
+            external = Paths.get(fileStructure.getWwwFolder(), indexPage);
+            // load index page from the external source
+            webView.loadUrlIntoView(FILE_PREFIX + external, false);
+        }
         
         Log.d("CHCP", "Loading external page: " + external);
     }
