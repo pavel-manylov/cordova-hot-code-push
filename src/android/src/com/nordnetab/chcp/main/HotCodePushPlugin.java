@@ -617,6 +617,8 @@ public class HotCodePushPlugin extends CordovaPlugin {
             pluginInternalPrefs.setCurrentReleaseVersionName(appConfig.getContentConfig().getReleaseVersion());
 
             pluginInternalPrefsStorage.storeInPreference(pluginInternalPrefs);
+            
+            fileStructure.switchToRelease(pluginInternalPrefs.getCurrentReleaseVersionName());
         }
 
         AssetsHelper.copyAssetDirectoryToAppDirectory(cordova.getActivity().getApplicationContext(), WWW_FOLDER, fileStructure.getWwwFolder());
