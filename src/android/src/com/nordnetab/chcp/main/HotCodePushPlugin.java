@@ -53,6 +53,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -689,8 +691,17 @@ public class HotCodePushPlugin extends CordovaPlugin {
         parser.parse(cordova.getActivity());
         String url = parser.getLaunchUrl();
 
-        startingPage = url.replace(LOCAL_ASSETS_FOLDER, "");
+        if (url.contains("://")){
+            try {
+                startingPage = new URI(url).getPath();
+            } catch (URISyntaxException e) {
+                Log.e("CHCP", "Can not parse starting page url "+ url);
+                startingPage = "index.html";
+            }
 
+        } else {
+            startingPage = url.replace(LOCAL_ASSETS_FOLDER, "");
+        }
         return startingPage;
     }
 
